@@ -5,14 +5,43 @@
   <title>Chat Socket.IO</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
     integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+  <style>
+    #lista{
+      background-color: slategray;
+      margin-top: 20px;
+    }
 
+    #titulo{
+      font-size: larger;
+    }
+    .espacio{
+      margin-top: 30px;
+    }
+  </style>
 </head>
 
 <body>
-  <input type="text" class="form-control" id="inputMsg" placeholder="Escribe tu mensaje..." />
-  <button class="btn btn-success" onclick="enviar()">Enviar</button>
+  <div class="row">
+    <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12">
+      <label id="titulo">Mensajes en línea.</label>
+    </div>
+  </div>
+  <div class="row espacio">
+    <div class="col-xs-12 col-sm-12 col-md-4 col-lg-4">
+      <input type="text" class="form-control" id="inputMsg" placeholder="Escribe tu mensaje..." />
+    </div>
+    <div class="col-xs-12 col-sm-12 col-md-4 col-lg-4">
+      <button class="btn btn-success" onclick="enviar()">Enviar</button>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-xs-12 col-sm-12 col-md-4 col-lg-4" id="lista">
+      <ul id="mensajes"></ul>
+    </div>
+  </div>
+ 
 
-  <ul id="mensajes"></ul>
+ 
 
 </body>
 
