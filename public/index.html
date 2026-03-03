@@ -3,33 +3,40 @@
 
 <head>
   <title>Chat Socket.IO</title>
-  <script src="/socket.io/socket.io.js"></script>
-  <script src="https://code.jquery.com" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
-    crossorigin="anonymous"></script>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
 
 </head>
 
 <body>
-  <input id="inputMsg" placeholder="Escribe tu mensaje..." />
-  <button onclick="enviar()">Enviar</button>
+  <input type="text" class="form-control" id="inputMsg" placeholder="Escribe tu mensaje..." />
+  <button class="btn btn-success" onclick="enviar()">Enviar</button>
 
   <ul id="mensajes"></ul>
 
-  <script>
-    const socket = io();
-
-    socket.on('mensaje', (msg) => {
-      const li = document.createElement('li');
-      li.textContent = msg;
-      document.getElementById('mensajes').appendChild(li);
-    });
-
-    function enviar() {
-      const text = document.getElementById('inputMsg').value;
-      socket.emit('mensaje', text);
-      document.getElementById('inputMsg').value = '';
-    }
-  </script>
 </body>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="https://code.jquery.com" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
+  crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
+  integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+
+<script>
+  const socket = io();
+
+  socket.on('mensaje', (msg) => {
+    const li = document.createElement('li');
+    li.textContent = msg;
+    document.getElementById('mensajes').appendChild(li);
+  });
+
+  function enviar() {
+    const text = document.getElementById('inputMsg').value;
+    socket.emit('mensaje', text);
+    document.getElementById('inputMsg').value = '';
+  }
+</script>
+
 
 </html>
