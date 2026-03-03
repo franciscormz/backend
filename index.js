@@ -7,7 +7,7 @@ const server = http.createServer(app);
 const io = new Server(server);
 
 // 👇 ESTA LÍNEA ES CLAVE
-//Línea para activar la carpeta public
+//Línea para activar la carpeta public pc2
 app.use(express.static('public'));
 
 io.on('connection', (socket) => {
