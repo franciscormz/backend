@@ -6,8 +6,7 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// 👇 ESTA LÍNEA ES CLAVE
-//Línea para activar la carpeta public pc2
+//Línea para activar la carpeta public pc2 en nodejs
 app.use(express.static('public'));
 
 io.on('connection', (socket) => {
