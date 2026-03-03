@@ -18,6 +18,7 @@ io.on('connection', (socket) => {
     });
 });
 
+//Iniciar el servidor
 server.listen(3000, () => {
     console.log('Servidor en http://localhost:3000');
 });
