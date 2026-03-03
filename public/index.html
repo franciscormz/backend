@@ -7,7 +7,7 @@
 </head>
 
 <body>
-  <input id="inputMsg" placeholder="Escribe..." />
+  <input id="inputMsg" placeholder="Escribe tu mensaje..." />
   <button onclick="enviar()">Enviar</button>
 
   <ul id="mensajes"></ul>
@@ -24,6 +24,7 @@
     function enviar() {
       const text = document.getElementById('inputMsg').value;
       socket.emit('mensaje', text);
+      document.getElementById('inputMsg').value = '';
     }
   </script>
 </body>
