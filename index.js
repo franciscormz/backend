@@ -10,7 +10,7 @@ const io = new Server(server);
 app.use(express.static('public'));
 
 io.on('connection', (socket) => {
-    console.log('Cliente conectado');
+    console.log('Cliente nuevo conectado');
 
     socket.on('mensaje', (data) => {
         io.emit('mensaje', data);
