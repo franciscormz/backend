@@ -18,5 +18,10 @@
   "bugs": {
     "url": "https://github.com/franciscormz/backend/issues"
   },
-  "homepage": "https://github.com/franciscormz/backend#readme"
+  "homepage": "https://github.com/franciscormz/backend#readme",
+  "dependencies": {
+    "express": "^5.2.1",
+    "http": "^0.0.1-security",
+    "socket.io": "^4.8.3"
+  }
 }
