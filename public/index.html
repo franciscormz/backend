@@ -2,9 +2,13 @@
 <html>
 
 <head>
-  <title>Chat Socket.IO</title>
+  <title>Chat y usuarios Socket.IO</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
     integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <style>
     #lista {
       background-color: rgb(191, 193, 194);
@@ -22,6 +26,40 @@
 </head>
 
 <body>
+  <h3>Agregar Usuario</h3>
+
+  <div class="row">
+
+    <div class="col">
+      <input id="nombre_usuario" class="form-control" placeholder="Usuario">
+    </div>
+
+    <div class="col">
+      <input id="password" class="form-control" placeholder="Password">
+    </div>
+
+    <div class="col">
+      <input id="nombre" class="form-control" placeholder="Nombre">
+    </div>
+
+    <div class="col">
+      <input id="ap_paterno" class="form-control" placeholder="Apellido Paterno">
+    </div>
+
+    <div class="col">
+      <input id="ap_materno" class="form-control" placeholder="Apellido Materno">
+    </div>
+
+    <div class="col">
+      <button class="btn btn-success" onclick="crearUsuario()">Guardar</button>
+    </div>
+
+  </div>
+
+  <hr>
+
+
+
   <div class="row">
     <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12">
       <label id="titulo">Mensajes en línea.</label>
@@ -40,17 +78,30 @@
       <ul id="mensajes"></ul>
     </div>
   </div>
+  <div class="row">
+    <div class="col-xs-12 col-sm-12 col-md-4 col-lg-4" id="listaUsuarios">
+      <ul id="usuarios"></ul>
+    </div>
+  </div>
+
+  <h3>Mapa de usuarios en tiempo real</h3>
+  <div class="row espacio">
+    <div class="col-12">
+      <div id="mapa" style="height:400px;"></div>
+    </div>
+  </div>
 
 </body>
 
 <script src="/socket.io/socket.io.js"></script>
-<script src="https://code.jquery.com" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
-  crossorigin="anonymous"></script>
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
   integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
 
 <script>
   const socket = io();
+  socket.emit("getUsuarios");
+  //socket.emit("mensaje");
   //Socket io
   socket.on('mensaje', (msg) => {
     const li = document.createElement('li');
@@ -58,11 +109,172 @@
     document.getElementById('mensajes').appendChild(li);
   });
 
+  socket.on('getUsuarios', (usuarios) => {
+    const lista = document.getElementById('usuarios');
+    lista.innerHTML = "";
+
+    usuarios.forEach(usuario => {
+      const li = document.createElement('li');
+      li.textContent = usuario.nombre + " - " + usuario.ap_paterno + " - " + usuario.ap_materno;
+      lista.appendChild(li);
+    });
+
+  });
+
+  // cuando alguien agrega usuario nuevo
+  socket.on("usuarioAgregado", (usuario) => {
+
+    agregarUsuarioLista(usuario);
+
+  });
+
+  function agregarUsuarioLista(usuario) {
+
+    const li = document.createElement("li");
+
+    li.textContent =
+      usuario.id + " - " +
+      usuario.nombre_usuario + " - " +
+      usuario.nombre + " " +
+      usuario.ap_paterno + " " +
+      usuario.ap_materno;
+
+    document.getElementById("usuarios").appendChild(li);
+
+  }
+
+  function crearUsuario() {
+    console.log("Clic crear Usuario");
+    const data = {
+
+      nombre_usuario: document.getElementById("nombre_usuario").value,
+      password: document.getElementById("password").value,
+      nombre: document.getElementById("nombre").value,
+      ap_paterno: document.getElementById("ap_paterno").value,
+      ap_materno: document.getElementById("ap_materno").value
+
+    };
+
+    socket.emit("nuevoUsuario", data);
+
+  }
+
+
   function enviar() {
     const text = document.getElementById('inputMsg').value;
     socket.emit('mensaje', text);
     document.getElementById('inputMsg').value = '';
   }
+
+
+  let mapa;
+  let marcador;
+  const marcadoresUsuarios = {};
+
+  function iniciarMapa(lat, lng) {
+
+    mapa = L.map('mapa').setView([lat, lng], 16);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap'
+    }).addTo(mapa);
+
+    marcador = L.marker([lat, lng]).addTo(mapa)
+      .bindPopup("Mi ubicación")
+      .openPopup();
+  }
+
+  // activar geolocalización
+  if (navigator.geolocation) {
+
+    navigator.geolocation.watchPosition((position) => {
+
+      const lat = position.coords.latitude;
+      const lng = position.coords.longitude;
+
+      console.log("Mi ubicación:", lat, lng);
+
+      if (!mapa) {
+
+        iniciarMapa(lat, lng);
+
+      } else {
+
+        marcador.setLatLng([lat, lng]);
+        mapa.setView([lat, lng]);
+
+      }
+
+      // enviar al servidor
+      socket.emit("ubicacion", {
+        lat: lat,
+        lng: lng
+      });
+
+    });
+
+  }
+
+  // recibir ubicaciones de otros usuarios
+  socket.on("ubicacionUsuarios", (data) => {
+
+    const { id, lat, lng } = data;
+
+    if (!mapa) return;
+
+    if (marcadoresUsuarios[id]) {
+
+      moverSuave(marcadoresUsuarios[id], lat, lng);
+
+    } else {
+
+      marcadoresUsuarios[id] = L.marker([lat, lng], {
+        icon: iconoPersona
+      })
+        .addTo(mapa)
+        .bindPopup("Usuario " + id);
+
+    }
+
+  });
+
+  const iconoPersona = L.icon({
+    iconUrl: "https://cdn-icons-png.flaticon.com/512/1946/1946429.png",
+    iconSize: [40, 40],
+    iconAnchor: [20, 40]
+  });
+
+  function moverSuave(marker, nuevaLat, nuevaLng) {
+
+    const duracion = 1000; // milisegundos
+    const pasos = 50;
+
+    const latInicial = marker.getLatLng().lat;
+    const lngInicial = marker.getLatLng().lng;
+
+    const deltaLat = (nuevaLat - latInicial) / pasos;
+    const deltaLng = (nuevaLng - lngInicial) / pasos;
+
+    let i = 0;
+
+    const intervalo = setInterval(() => {
+
+      if (i >= pasos) {
+        clearInterval(intervalo);
+        return;
+      }
+
+      const lat = latInicial + (deltaLat * i);
+      const lng = lngInicial + (deltaLng * i);
+
+      marker.setLatLng([lat, lng]);
+
+      i++;
+
+    }, duracion / pasos);
+
+  }
+
 </script>
 
 </html>
