@@ -8,11 +8,15 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
+
 //Línea para activar la carpeta public pc2 en nodejs
 app.use(express.static('public'));
+const usuariosUbicacion = {};
+let usuariosConectados = 0;
 
 io.on('connection', (socket) => {
-    console.log('Cliente conectado');
+    console.log("Usuario conectado:", socket.id);
+    usuariosConectados++;
 
     // Obtener usuarios existentes
     socket.on("getUsuarios", async () => {
@@ -49,17 +53,34 @@ io.on('connection', (socket) => {
         io.emit('mensaje', data);
     });
 
+    socket.emit("usuariosIniciales", usuariosUbicacion);
+
     // Recibir ubicación
     socket.on("ubicacion", (data) => {
-        console.log("Ubicación recibida:", data);
 
-        // Enviar a todos los clientes
+        usuariosUbicacion[socket.id] = {
+            lat: data.lat,
+            lng: data.lng
+        };
+
         io.emit("ubicacionUsuarios", {
             id: socket.id,
             lat: data.lat,
             lng: data.lng
         });
+
     });
+
+
+    io.emit("usuariosConectados", usuariosConectados);
+
+    // 🔴 cuando un usuario se desconecta
+    socket.on("disconnect", () => {
+        usuariosConectados--;
+        console.log("Usuario desconectado:", socket.id);
+        io.emit("usuariosConectados", usuariosConectados);
+    });
+
 });
 
 //Iniciar el servidor nodejs

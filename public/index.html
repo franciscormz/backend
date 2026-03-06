@@ -85,9 +85,10 @@
   </div>
 
   <h3>Mapa de usuarios en tiempo real</h3>
+  <h4>Usuarios conectados: <span id="totalUsuarios">0</span></h4>
   <div class="row espacio">
     <div class="col-12">
-      <div id="mapa" style="height:400px;"></div>
+      <div id="mapa" style="height:800px;"></div>
     </div>
   </div>
 
@@ -101,6 +102,7 @@
 <script>
   const socket = io();
   socket.emit("getUsuarios");
+  let usuariosPendientes = {};
   //socket.emit("mensaje");
   //Socket io
   socket.on('mensaje', (msg) => {
@@ -180,8 +182,13 @@
     }).addTo(mapa);
 
     marcador = L.marker([lat, lng]).addTo(mapa)
-      .bindPopup("Mi ubicación")
+      .bindPopup("Mi ubicación en el mapa")
       .openPopup();
+
+    if (Object.keys(usuariosPendientes).length > 0) {
+      cargarUsuariosIniciales();
+    }
+
   }
 
   // activar geolocalización
@@ -217,10 +224,40 @@
 
   // recibir ubicaciones de otros usuarios
   socket.on("ubicacionUsuarios", (data) => {
-
     const { id, lat, lng } = data;
 
-    if (!mapa) return;
+    if (id === socket.id) return;
+    if (!id || !lat || !lng) return;
+
+    socket.on("usuariosIniciales", (usuarios) => {
+
+      usuariosPendientes = usuarios;
+
+      if (mapa) {
+        cargarUsuariosIniciales();
+      }
+
+    });
+
+    function cargarUsuariosIniciales() {
+
+      for (const id in usuariosPendientes) {
+
+        if (id === socket.id) continue;
+
+        const { lat, lng } = usuariosPendientes[id];
+
+        marcadoresUsuarios[id] = L.marker([lat, lng], {
+          icon: iconoPersona
+        })
+          .addTo(mapa)
+          .bindPopup("Usuario " + id);
+
+      }
+
+      usuariosPendientes = {};
+
+    }
 
     if (marcadoresUsuarios[id]) {
 
@@ -236,6 +273,33 @@
 
     }
 
+  });
+
+  socket.on("usuariosIniciales", (usuarios) => {
+
+    if (!mapa) return;
+
+    for (const id in usuarios) {
+
+      if (id === socket.id) continue;
+
+      const { lat, lng } = usuarios[id];
+
+      marcadoresUsuarios[id] = L.marker([lat, lng], {
+        icon: iconoPersona
+      })
+        .addTo(mapa)
+        .bindPopup("Usuario " + id);
+
+    }
+
+  });
+
+  socket.on("usuarioDesconectado", (id) => {
+    if (marcadoresUsuarios[id]) {
+      mapa.removeLayer(marcadoresUsuarios[id]);
+      delete marcadoresUsuarios[id];
+    }
   });
 
   const iconoPersona = L.icon({
@@ -274,6 +338,10 @@
     }, duracion / pasos);
 
   }
+
+  socket.on("usuariosConectados", (total) => {
+    document.getElementById("totalUsuarios").textContent = total;
+  });
 
 </script>
 
