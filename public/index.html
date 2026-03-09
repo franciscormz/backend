@@ -171,7 +171,14 @@
 
   let mapa;
   let marcador;
+  let usuariosInicialesPendientes = {};
   const marcadoresUsuarios = {};
+
+  const iconoPersona = L.icon({
+    iconUrl: "https://cdn-icons-png.flaticon.com/512/1946/1946429.png",
+    iconSize: [40, 40],
+    iconAnchor: [20, 40]
+  });
 
   function iniciarMapa(lat, lng) {
 
@@ -181,25 +188,25 @@
       attribution: '&copy; OpenStreetMap'
     }).addTo(mapa);
 
-    marcador = L.marker([lat, lng]).addTo(mapa)
-      .bindPopup("Mi ubicación en el mapa")
+    marcador = L.marker([lat, lng])
+      .addTo(mapa)
+      .bindPopup("Mi ubicación")
       .openPopup();
 
-    if (Object.keys(usuariosPendientes).length > 0) {
-      cargarUsuariosIniciales();
+    // si ya llegaron usuarios iniciales
+    if (Object.keys(usuariosInicialesPendientes).length > 0) {
+      pintarUsuariosIniciales();
     }
-
   }
 
-  // activar geolocalización
+
+  // GEOLOCALIZACIÓN
   if (navigator.geolocation) {
 
     navigator.geolocation.watchPosition((position) => {
 
       const lat = position.coords.latitude;
       const lng = position.coords.longitude;
-
-      console.log("Mi ubicación:", lat, lng);
 
       if (!mapa) {
 
@@ -208,56 +215,55 @@
       } else {
 
         marcador.setLatLng([lat, lng]);
-        mapa.setView([lat, lng]);
 
       }
 
-      // enviar al servidor
-      socket.emit("ubicacion", {
-        lat: lat,
-        lng: lng
-      });
+      socket.emit("ubicacion", { lat, lng });
 
     });
 
   }
 
-  // recibir ubicaciones de otros usuarios
+
+  // USUARIOS QUE YA ESTABAN CONECTADOS
+  socket.on("usuariosIniciales", (usuarios) => {
+
+    usuariosInicialesPendientes = usuarios;
+
+    if (mapa) {
+      pintarUsuariosIniciales();
+    }
+
+  });
+
+
+  function pintarUsuariosIniciales() {
+
+    for (const id in usuariosInicialesPendientes) {
+
+      if (id === socket.id) continue;
+
+      const { lat, lng } = usuariosInicialesPendientes[id];
+
+      marcadoresUsuarios[id] = L.marker([lat, lng], {
+        icon: iconoPersona
+      })
+        .addTo(mapa)
+        .bindPopup("Usuario " + id);
+
+    }
+
+    usuariosInicialesPendientes = {};
+
+  }
+
+
+  // ACTUALIZACIÓN DE UBICACIONES
   socket.on("ubicacionUsuarios", (data) => {
+
     const { id, lat, lng } = data;
 
     if (id === socket.id) return;
-    if (!id || !lat || !lng) return;
-
-    socket.on("usuariosIniciales", (usuarios) => {
-
-      usuariosPendientes = usuarios;
-
-      if (mapa) {
-        cargarUsuariosIniciales();
-      }
-
-    });
-
-    function cargarUsuariosIniciales() {
-
-      for (const id in usuariosPendientes) {
-
-        if (id === socket.id) continue;
-
-        const { lat, lng } = usuariosPendientes[id];
-
-        marcadoresUsuarios[id] = L.marker([lat, lng], {
-          icon: iconoPersona
-        })
-          .addTo(mapa)
-          .bindPopup("Usuario " + id);
-
-      }
-
-      usuariosPendientes = {};
-
-    }
 
     if (marcadoresUsuarios[id]) {
 
@@ -275,43 +281,23 @@
 
   });
 
-  socket.on("usuariosIniciales", (usuarios) => {
-
-    if (!mapa) return;
-
-    for (const id in usuarios) {
-
-      if (id === socket.id) continue;
-
-      const { lat, lng } = usuarios[id];
-
-      marcadoresUsuarios[id] = L.marker([lat, lng], {
-        icon: iconoPersona
-      })
-        .addTo(mapa)
-        .bindPopup("Usuario " + id);
-
-    }
-
-  });
 
   socket.on("usuarioDesconectado", (id) => {
+
     if (marcadoresUsuarios[id]) {
+
       mapa.removeLayer(marcadoresUsuarios[id]);
+
       delete marcadoresUsuarios[id];
+
     }
+
   });
 
-  const iconoPersona = L.icon({
-    iconUrl: "https://cdn-icons-png.flaticon.com/512/1946/1946429.png",
-    iconSize: [40, 40],
-    iconAnchor: [20, 40]
-  });
 
   function moverSuave(marker, nuevaLat, nuevaLng) {
 
-    const duracion = 1000; // milisegundos
-    const pasos = 50;
+    const pasos = 30;
 
     const latInicial = marker.getLatLng().lat;
     const lngInicial = marker.getLatLng().lng;
@@ -328,14 +314,14 @@
         return;
       }
 
-      const lat = latInicial + (deltaLat * i);
-      const lng = lngInicial + (deltaLng * i);
-
-      marker.setLatLng([lat, lng]);
+      marker.setLatLng([
+        latInicial + deltaLat * i,
+        lngInicial + deltaLng * i
+      ]);
 
       i++;
 
-    }, duracion / pasos);
+    }, 30);
 
   }
 

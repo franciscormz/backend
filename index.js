@@ -74,11 +74,18 @@ io.on('connection', (socket) => {
 
     io.emit("usuariosConectados", usuariosConectados);
 
-    // 🔴 cuando un usuario se desconecta
     socket.on("disconnect", () => {
+
         usuariosConectados--;
+
+        delete usuariosUbicacion[socket.id];
+
         console.log("Usuario desconectado:", socket.id);
+
+        io.emit("usuarioDesconectado", socket.id);
+
         io.emit("usuariosConectados", usuariosConectados);
+
     });
 
 });
