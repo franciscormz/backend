@@ -102,7 +102,6 @@
 <script>
   const socket = io();
   socket.emit("getUsuarios");
-  let usuariosPendientes = {};
   //socket.emit("mensaje");
   //Socket io
   socket.on('mensaje', (msg) => {
@@ -171,8 +170,8 @@
 
   let mapa;
   let marcador;
-  let usuariosInicialesPendientes = {};
   const marcadoresUsuarios = {};
+  let usuariosPendientes = {};
 
   const iconoPersona = L.icon({
     iconUrl: "https://cdn-icons-png.flaticon.com/512/1946/1946429.png",
@@ -193,14 +192,31 @@
       .bindPopup("Mi ubicación")
       .openPopup();
 
-    // si ya llegaron usuarios iniciales
-    if (Object.keys(usuariosInicialesPendientes).length > 0) {
-      pintarUsuariosIniciales();
+    // cargar usuarios pendientes
+    for (const id in usuariosPendientes) {
+
+      if (id === socket.id) continue;
+
+      const { lat, lng } = usuariosPendientes[id];
+
+      crearMarcador(id, lat, lng);
+
     }
+
+    usuariosPendientes = {};
+
   }
 
+  function crearMarcador(id, lat, lng) {
 
-  // GEOLOCALIZACIÓN
+    marcadoresUsuarios[id] = L.marker([lat, lng], {
+      icon: iconoPersona
+    })
+      .addTo(mapa)
+      .bindPopup("Usuario " + id);
+
+  }
+
   if (navigator.geolocation) {
 
     navigator.geolocation.watchPosition((position) => {
@@ -228,42 +244,40 @@
   // USUARIOS QUE YA ESTABAN CONECTADOS
   socket.on("usuariosIniciales", (usuarios) => {
 
-    usuariosInicialesPendientes = usuarios;
+    for (const id in usuarios) {
 
-    if (mapa) {
-      pintarUsuariosIniciales();
+      if (id === socket.id) continue;
+
+      const { lat, lng } = usuarios[id];
+
+      if (!mapa) {
+
+        usuariosPendientes[id] = { lat, lng };
+
+      } else {
+
+        crearMarcador(id, lat, lng);
+
+      }
+
     }
 
   });
 
 
-  function pintarUsuariosIniciales() {
-
-    for (const id in usuariosInicialesPendientes) {
-
-      if (id === socket.id) continue;
-
-      const { lat, lng } = usuariosInicialesPendientes[id];
-
-      marcadoresUsuarios[id] = L.marker([lat, lng], {
-        icon: iconoPersona
-      })
-        .addTo(mapa)
-        .bindPopup("Usuario " + id);
-
-    }
-
-    usuariosInicialesPendientes = {};
-
-  }
-
-
-  // ACTUALIZACIÓN DE UBICACIONES
+  // ACTUALIZACIONES EN TIEMPO REAL
   socket.on("ubicacionUsuarios", (data) => {
 
     const { id, lat, lng } = data;
 
     if (id === socket.id) return;
+
+    if (!mapa) {
+
+      usuariosPendientes[id] = { lat, lng };
+      return;
+
+    }
 
     if (marcadoresUsuarios[id]) {
 
@@ -271,11 +285,7 @@
 
     } else {
 
-      marcadoresUsuarios[id] = L.marker([lat, lng], {
-        icon: iconoPersona
-      })
-        .addTo(mapa)
-        .bindPopup("Usuario " + id);
+      crearMarcador(id, lat, lng);
 
     }
 
@@ -287,7 +297,6 @@
     if (marcadoresUsuarios[id]) {
 
       mapa.removeLayer(marcadoresUsuarios[id]);
-
       delete marcadoresUsuarios[id];
 
     }
